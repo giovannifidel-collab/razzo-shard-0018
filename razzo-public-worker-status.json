@@ -1,6 +1,6 @@
 {
   "schema": "razzo.public-worker-status.v1",
-  "state": "started",
+  "state": "completed",
   "workflowRunId": "30938310780",
   "cycleId": "razzo-acf70306d7a7",
   "workItemId": "981f4a0d6fcf38b4f42780e9",
@@ -8,8 +8,8 @@
   "projectId": "family-cloud",
   "repository": "giovannifidel-collab/family-cloud",
   "exactInputSha": "6b9cdfc6e865204a490456688c55e1d61c5ced41",
-  "observedSha": null,
-  "durationSeconds": null,
+  "observedSha": "6b9cdfc6e865204a490456688c55e1d61c5ced41",
+  "durationSeconds": 0.716,
   "error": null,
-  "updatedEpoch": 1785867755.642565
+  "updatedEpoch": 1785867757.5132086
 }
