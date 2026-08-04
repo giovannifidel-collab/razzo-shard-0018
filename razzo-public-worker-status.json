@@ -1,6 +1,6 @@
 {
   "schema": "razzo.public-worker-status.v2",
-  "state": "started",
+  "state": "completed",
   "workflowRunId": "30960437416",
   "cycleId": "razzo-9fc39d8816c4",
   "generationId": "razzo-9fc39d8816c4:g1",
@@ -11,8 +11,8 @@
   "title": "PFarma Factory planner execution",
   "kind": "planning",
   "exactInputSha": "4ec4c68669be40b1b6e48fab018c42b4a908362b",
-  "observedSha": null,
-  "durationSeconds": null,
+  "observedSha": "4ec4c68669be40b1b6e48fab018c42b4a908362b",
+  "durationSeconds": 1.847,
   "error": null,
-  "updatedEpoch": 1785886462.598168
+  "updatedEpoch": 1785886465.5567214
 }
