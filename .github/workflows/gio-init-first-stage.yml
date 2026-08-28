@@ -12,11 +12,11 @@ permissions:
 
 concurrency:
   group: gio-os-init-first-stage
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build-init:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 300
     env:
       AOSP_TAG: android-14.0.0_r67
@@ -93,13 +93,11 @@ jobs:
             clone_exact "$path" "https://github.com/${repo_name}.git" "$sha"
           }
 
-          # crDroid inputs already proven/pinned by the gio-OS fabric.
           clone_exact build/make https://github.com/crdroidandroid/android_build.git a65e54af30218c78ceca6b4582d13e141198043e
           clone_exact build/soong https://github.com/crdroidandroid/android_build_soong.git a0a54ba5247245b50fb5205b3b44262fac8227eb
           clone_exact system/core https://github.com/crdroidandroid/android_system_core.git 4f4ec573833c637896b12694654b40d33d242d99
           clone_exact bionic https://github.com/crdroidandroid/android_bionic.git 1e50ab3618271567b79b813288c77abb7babac80
 
-          # Soong/build bootstrap closure, including AP2A release config.
           clone_aosp_tag build/blueprint build/blueprint
           clone_aosp_tag build/bazel build/bazel
           clone_github_snapshot build/release LineageOS/android_build_release lineage-21.0
@@ -110,7 +108,6 @@ jobs:
           clone_exact toolchain/pgo-profiles https://github.com/crdroidandroid/android_toolchain_pgo-profiles.git c3af7d5da6da864adeb60c0095463a8660934c1d
           clone_github_snapshot prebuilts/build-tools crdroidandroid/android_prebuilts_build-tools 14.0
 
-          # Exact Android 14 runtime/static-link closure for init_first_stage.
           clone_aosp_tag system/libbase system/libbase
           clone_github_snapshot system/logging LineageOS/android_system_logging lineage-21.0
           clone_aosp_tag system/unwinding system/unwinding
@@ -127,8 +124,6 @@ jobs:
           clone_aosp_tag external/selinux external/selinux
           clone_github_snapshot system/update_engine crdroidandroid/android_system_update_engine 14.0
 
-          # Android 14 Soong at this exact crDroid commit selects clang-r510928.
-          # Sparse checkout prevents repeating the ~16 GiB full clang repository checkout.
           mkdir -p "$ROOT/prebuilts/clang/host"
           git init -q "$ROOT/prebuilts/clang/host/linux-x86"
           git -C "$ROOT/prebuilts/clang/host/linux-x86" remote add origin \
@@ -143,7 +138,6 @@ jobs:
             https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86 \
             "$(git -C "$ROOT/prebuilts/clang/host/linux-x86" rev-parse HEAD)"
 
-          # Materialize manifest linkfiles needed by the Android build bootstrap.
           ln -sfn soong/root.bp "$ROOT/Android.bp"
           ln -sfn build/soong/bootstrap.bash "$ROOT/bootstrap.bash"
           ln -sfn make/CleanSpec.mk "$ROOT/build/CleanSpec.mk"
