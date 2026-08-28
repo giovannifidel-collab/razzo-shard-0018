@@ -1,0 +1,262 @@
+name: gio-OS Android 14 init_first_stage Capsule
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/gio-init-first-stage.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gio-os-init-first-stage
+  cancel-in-progress: false
+
+jobs:
+  build-init:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    env:
+      AOSP_TAG: android-14.0.0_r67
+      SNAPSHOT_UNTIL: '2024-12-14T00:00:00Z'
+      ROOT: ${{ github.workspace }}/android
+      OUT_DIR: ${{ github.workspace }}/android/out
+    steps:
+      - name: Install deterministic host prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            bc bison build-essential ca-certificates curl flex git git-lfs \
+            libelf-dev libssl-dev lz4 python3 rsync unzip zip zstd
+
+      - name: Resolve and checkout public source closure
+        id: closure
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$ROOT" "$RUNNER_TEMP/gio"
+          lock="$RUNNER_TEMP/gio/source-lock.tsv"
+          : > "$lock"
+
+          record() {
+            local path="$1" repo="$2" sha="$3"
+            printf '%s\t%s\t%s\n' "$path" "$repo" "$sha" >> "$lock"
+          }
+
+          clone_exact() {
+            local path="$1" repo="$2" sha="$3"
+            mkdir -p "$(dirname "$ROOT/$path")"
+            git init -q "$ROOT/$path"
+            git -C "$ROOT/$path" remote add origin "$repo"
+            git -C "$ROOT/$path" -c protocol.version=2 fetch -q --depth=1 --filter=blob:none origin "$sha"
+            git -C "$ROOT/$path" checkout -q --detach FETCH_HEAD
+            local actual
+            actual="$(git -C "$ROOT/$path" rev-parse HEAD)"
+            test "$actual" = "$sha"
+            record "$path" "$repo" "$actual"
+          }
+
+          clone_aosp_tag() {
+            local path="$1" project="$2"
+            local repo="https://android.googlesource.com/platform/${project}"
+            mkdir -p "$(dirname "$ROOT/$path")"
+            git init -q "$ROOT/$path"
+            git -C "$ROOT/$path" remote add origin "$repo"
+            git -C "$ROOT/$path" -c protocol.version=2 fetch -q --depth=1 --filter=blob:none origin "refs/tags/${AOSP_TAG}"
+            git -C "$ROOT/$path" checkout -q --detach FETCH_HEAD
+            local actual
+            actual="$(git -C "$ROOT/$path" rev-parse HEAD)"
+            [[ "$actual" =~ ^[0-9a-f]{40}$ ]]
+            record "$path" "$repo" "$actual"
+          }
+
+          github_snapshot_sha() {
+            local repo="$1" branch="$2"
+            curl --fail-with-body --silent --show-error \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${repo}/commits?sha=${branch}&until=${SNAPSHOT_UNTIL}&per_page=1" \
+              | python3 -c 'import json,sys; d=json.load(sys.stdin); assert len(d)==1; print(d[0]["sha"])'
+          }
+
+          clone_github_snapshot() {
+            local path="$1" repo_name="$2" branch="$3"
+            local sha
+            sha="$(github_snapshot_sha "$repo_name" "$branch")"
+            [[ "$sha" =~ ^[0-9a-f]{40}$ ]]
+            clone_exact "$path" "https://github.com/${repo_name}.git" "$sha"
+          }
+
+          # crDroid inputs already proven/pinned by the gio-OS fabric.
+          clone_exact build/make https://github.com/crdroidandroid/android_build.git a65e54af30218c78ceca6b4582d13e141198043e
+          clone_exact build/soong https://github.com/crdroidandroid/android_build_soong.git a0a54ba5247245b50fb5205b3b44262fac8227eb
+          clone_exact system/core https://github.com/crdroidandroid/android_system_core.git 4f4ec573833c637896b12694654b40d33d242d99
+          clone_exact bionic https://github.com/crdroidandroid/android_bionic.git 1e50ab3618271567b79b813288c77abb7babac80
+
+          # Soong bootstrap closure.
+          clone_aosp_tag build/blueprint build/blueprint
+          clone_aosp_tag prebuilts/go/linux-x86 prebuilts/go/linux-x86
+          clone_aosp_tag prebuilts/bazel/common prebuilts/bazel/common
+          clone_aosp_tag external/golang-protobuf external/golang-protobuf
+          clone_aosp_tag external/starlark-go external/starlark-go
+          clone_github_snapshot prebuilts/build-tools crdroidandroid/android_prebuilts_build-tools 14.0
+
+          # Exact Android 14 runtime/static-link closure for init_first_stage.
+          clone_aosp_tag system/libbase system/libbase
+          clone_github_snapshot system/logging LineageOS/android_system_logging lineage-21.0
+          clone_aosp_tag system/unwinding system/unwinding
+          clone_aosp_tag system/libprocinfo system/libprocinfo
+          clone_github_snapshot system/extras LineageOS/android_system_extras lineage-21.0
+          clone_github_snapshot external/avb LineageOS/android_external_avb lineage-21.0
+          clone_aosp_tag external/boringssl external/boringssl
+          clone_aosp_tag external/e2fsprogs external/e2fsprogs
+          clone_aosp_tag external/libcap external/libcap
+          clone_aosp_tag external/libcxx external/libcxx
+          clone_aosp_tag external/lz4 external/lz4
+          clone_aosp_tag external/lzma external/lzma
+          clone_aosp_tag external/protobuf external/protobuf
+          clone_aosp_tag external/selinux external/selinux
+          clone_github_snapshot system/update_engine crdroidandroid/android_system_update_engine 14.0
+
+          # Android 14 Soong at this exact crDroid commit selects clang-r510928.
+          # Sparse checkout prevents repeating the ~16 GiB full clang repository checkout.
+          mkdir -p "$ROOT/prebuilts/clang/host"
+          git init -q "$ROOT/prebuilts/clang/host/linux-x86"
+          git -C "$ROOT/prebuilts/clang/host/linux-x86" remote add origin \
+            https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86
+          git -C "$ROOT/prebuilts/clang/host/linux-x86" config core.sparseCheckout true
+          printf '/clang-r510928/\n' > "$ROOT/prebuilts/clang/host/linux-x86/.git/info/sparse-checkout"
+          git -C "$ROOT/prebuilts/clang/host/linux-x86" -c protocol.version=2 fetch -q --depth=1 --filter=blob:none origin \
+            7154d3eddcb62ff7909a6ae2bf0c03e445e65bc4
+          git -C "$ROOT/prebuilts/clang/host/linux-x86" checkout -q --detach FETCH_HEAD
+          test -x "$ROOT/prebuilts/clang/host/linux-x86/clang-r510928/bin/clang"
+          record prebuilts/clang/host/linux-x86 \
+            https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86 \
+            "$(git -C "$ROOT/prebuilts/clang/host/linux-x86" rev-parse HEAD)"
+
+          # Materialize manifest linkfiles needed by the Android build bootstrap.
+          ln -sfn soong/root.bp "$ROOT/Android.bp"
+          ln -sfn build/soong/bootstrap.bash "$ROOT/bootstrap.bash"
+          ln -sfn make/CleanSpec.mk "$ROOT/build/CleanSpec.mk"
+          ln -sfn make/buildspec.mk.default "$ROOT/build/buildspec.mk.default"
+          ln -sfn make/core "$ROOT/build/core"
+          ln -sfn make/envsetup.sh "$ROOT/build/envsetup.sh"
+          ln -sfn make/target "$ROOT/build/target"
+          ln -sfn make/tools "$ROOT/build/tools"
+
+          sort -o "$lock" "$lock"
+          python3 - "$lock" "$RUNNER_TEMP/gio/source-lock.json" <<'PY'
+          import json, re, sys
+          src, dst = sys.argv[1:]
+          projects=[]
+          for line in open(src):
+              path, repo, sha = line.rstrip('\n').split('\t')
+              assert re.fullmatch(r'[0-9a-f]{40}', sha)
+              projects.append({'path':path,'repository':repo,'revision':sha})
+          json.dump({
+              'schema_version':1,
+              'capsule_id':'lavender-init-first-stage-a14-r1',
+              'target':'lavender',
+              'aosp_release':'android-14.0.0_r67',
+              'snapshot_until':'2024-12-14T00:00:00Z',
+              'private_source_present':False,
+              'projects':projects,
+          }, open(dst,'w'), indent=2, sort_keys=True)
+          PY
+
+          # Fail before compilation if the compact shard exceeded its policy budget.
+          kib="$(du -sk "$ROOT" | awk '{print $1}')"
+          python3 - "$kib" <<'PY'
+          import sys
+          gib=int(sys.argv[1])/1024/1024
+          print(f'closure working set before build: {gib:.3f} GiB')
+          if gib > 12.5:
+              raise SystemExit('closure exceeds 12.5 GiB shard budget')
+          PY
+
+      - name: Create minimal ARM64 product envelope
+        shell: bash
+        run: |
+          set -euo pipefail
+          # aosp_arm64 has one product-time include outside build/make that is irrelevant
+          # to init_first_stage. Supply only that make include, not private/product source.
+          mkdir -p "$ROOT/packages/modules/Virtualization/apex"
+          : > "$ROOT/packages/modules/Virtualization/apex/product_packages.mk"
+
+      - name: Compile init_first_stage
+        shell: bash
+        working-directory: ${{ github.workspace }}/android
+        run: |
+          set -euo pipefail
+          export TARGET_PRODUCT=aosp_arm64
+          export TARGET_BUILD_VARIANT=userdebug
+          export TARGET_BUILD_TYPE=release
+          export ALLOW_NINJA_ENV=false
+          build/soong/soong_ui.bash --make-mode init_first_stage
+
+      - name: Materialize verified init capsule
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/gio/capsule"
+          mapfile -t candidates < <(find "$OUT_DIR" -type f -name init -path '*init_first_stage*' -print)
+          test "${#candidates[@]}" -ge 1
+          printf '%s\n' "${candidates[@]}"
+          src="${candidates[0]}"
+          cp "$src" "$RUNNER_TEMP/gio/capsule/init"
+          file "$RUNNER_TEMP/gio/capsule/init" | tee "$RUNNER_TEMP/gio/capsule/file.txt"
+          file "$RUNNER_TEMP/gio/capsule/init" | grep -Eq 'ELF 64-bit.*(ARM aarch64|ARM64|aarch64)'
+          if readelf -d "$RUNNER_TEMP/gio/capsule/init" 2>/dev/null | grep -q 'NEEDED'; then
+            echo 'init_first_stage unexpectedly has dynamic dependencies' >&2
+            exit 1
+          fi
+          sha256sum "$RUNNER_TEMP/gio/capsule/init" | tee "$RUNNER_TEMP/gio/capsule/init.sha256"
+          cp "$RUNNER_TEMP/gio/source-lock.json" "$RUNNER_TEMP/gio/capsule/source-lock.json"
+          "$ROOT/prebuilts/clang/host/linux-x86/clang-r510928/bin/clang" --version \
+            > "$RUNNER_TEMP/gio/capsule/clang-version.txt"
+          du -sh "$ROOT" "$OUT_DIR" > "$RUNNER_TEMP/gio/capsule/working-set.txt"
+          python3 - "$RUNNER_TEMP/gio/capsule" "${GITHUB_REPOSITORY}" "${GITHUB_RUN_ID}" "${GITHUB_SHA}" <<'PY'
+          import hashlib, json, os, pathlib, sys
+          d=pathlib.Path(sys.argv[1]); p=d/'init'; b=p.stat().st_size
+          h=hashlib.sha256(p.read_bytes()).hexdigest()
+          json.dump({
+            'schema':1,
+            'capsule_id':'lavender-init-first-stage-a14-r1',
+            'kind':'android-module',
+            'target':'lavender',
+            'module':'init_first_stage',
+            'outputs':[{'path':'init','sha256':h,'bytes':b}],
+            'provenance':{
+              'worker_repo':sys.argv[2],
+              'workflow_run':int(sys.argv[3]),
+              'commit_sha':sys.argv[4],
+              'private_source_present':False
+            }
+          }, open(d/'capsule.json','w'), indent=2, sort_keys=True)
+          PY
+
+      - name: Upload resolved closure even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gio-init-first-stage-resolved-lock-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/gio/source-lock.json
+            ${{ runner.temp }}/gio/source-lock.tsv
+          if-no-files-found: warn
+          retention-days: 3
+
+      - name: Upload compiled init capsule
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gio-lavender-init-first-stage-a14-r1
+          path: ${{ runner.temp }}/gio/capsule/
+          if-no-files-found: error
+          retention-days: 7
