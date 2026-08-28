@@ -99,12 +99,13 @@ jobs:
           clone_exact system/core https://github.com/crdroidandroid/android_system_core.git 4f4ec573833c637896b12694654b40d33d242d99
           clone_exact bionic https://github.com/crdroidandroid/android_bionic.git 1e50ab3618271567b79b813288c77abb7babac80
 
-          # Soong/build bootstrap closure, including the AP2A release-config map.
+          # Soong/build bootstrap closure, including AP2A release config and VNDK metadata.
           clone_aosp_tag build/blueprint build/blueprint
           clone_aosp_tag build/bazel build/bazel
           clone_github_snapshot build/release LineageOS/android_build_release lineage-21.0
           clone_aosp_tag prebuilts/go/linux-x86 prebuilts/go/linux-x86
           clone_aosp_tag prebuilts/bazel/common prebuilts/bazel/common
+          clone_aosp_tag prebuilts/vndk/v30 prebuilts/vndk/v30
           clone_aosp_tag external/golang-protobuf external/golang-protobuf
           clone_aosp_tag external/starlark-go external/starlark-go
           clone_github_snapshot prebuilts/build-tools crdroidandroid/android_prebuilts_build-tools 14.0
