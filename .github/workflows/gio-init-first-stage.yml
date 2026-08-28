@@ -99,8 +99,9 @@ jobs:
           clone_exact system/core https://github.com/crdroidandroid/android_system_core.git 4f4ec573833c637896b12694654b40d33d242d99
           clone_exact bionic https://github.com/crdroidandroid/android_bionic.git 1e50ab3618271567b79b813288c77abb7babac80
 
-          # Soong bootstrap closure.
+          # Soong/build bootstrap closure, including the AP2A release-config map.
           clone_aosp_tag build/blueprint build/blueprint
+          clone_github_snapshot build/release LineageOS/android_build_release lineage-21.0
           clone_aosp_tag prebuilts/go/linux-x86 prebuilts/go/linux-x86
           clone_aosp_tag prebuilts/bazel/common prebuilts/bazel/common
           clone_aosp_tag external/golang-protobuf external/golang-protobuf
@@ -164,13 +165,13 @@ jobs:
               'capsule_id':'lavender-init-first-stage-a14-r1',
               'target':'lavender',
               'aosp_release':'android-14.0.0_r67',
+              'target_release':'ap2a',
               'snapshot_until':'2024-12-14T00:00:00Z',
               'private_source_present':False,
               'projects':projects,
           }, open(dst,'w'), indent=2, sort_keys=True)
           PY
 
-          # Fail before compilation if the compact shard exceeded its policy budget.
           kib="$(du -sk "$ROOT" | awk '{print $1}')"
           python3 - "$kib" <<'PY'
           import sys
@@ -184,8 +185,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # aosp_arm64 has one product-time include outside build/make that is irrelevant
-          # to init_first_stage. Supply only that make include, not private/product source.
           mkdir -p "$ROOT/packages/modules/Virtualization/apex"
           : > "$ROOT/packages/modules/Virtualization/apex/product_packages.mk"
 
@@ -195,6 +194,7 @@ jobs:
         run: |
           set -euo pipefail
           export TARGET_PRODUCT=aosp_arm64
+          export TARGET_RELEASE=ap2a
           export TARGET_BUILD_VARIANT=userdebug
           export TARGET_BUILD_TYPE=release
           export ALLOW_NINJA_ENV=false
@@ -222,7 +222,7 @@ jobs:
             > "$RUNNER_TEMP/gio/capsule/clang-version.txt"
           du -sh "$ROOT" "$OUT_DIR" > "$RUNNER_TEMP/gio/capsule/working-set.txt"
           python3 - "$RUNNER_TEMP/gio/capsule" "${GITHUB_REPOSITORY}" "${GITHUB_RUN_ID}" "${GITHUB_SHA}" <<'PY'
-          import hashlib, json, os, pathlib, sys
+          import hashlib, json, pathlib, sys
           d=pathlib.Path(sys.argv[1]); p=d/'init'; b=p.stat().st_size
           h=hashlib.sha256(p.read_bytes()).hexdigest()
           json.dump({
