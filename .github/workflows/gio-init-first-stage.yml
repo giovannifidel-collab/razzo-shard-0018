@@ -107,7 +107,7 @@ jobs:
           clone_aosp_tag prebuilts/bazel/common prebuilts/bazel/common
           clone_aosp_tag external/golang-protobuf external/golang-protobuf
           clone_aosp_tag external/starlark-go external/starlark-go
-          clone_aosp_tag toolchain/pgo-profiles toolchain/pgo-profiles
+          clone_exact toolchain/pgo-profiles https://github.com/crdroidandroid/android_toolchain_pgo-profiles.git c3af7d5da6da864adeb60c0095463a8660934c1d
           clone_github_snapshot prebuilts/build-tools crdroidandroid/android_prebuilts_build-tools 14.0
 
           # Exact Android 14 runtime/static-link closure for init_first_stage.
