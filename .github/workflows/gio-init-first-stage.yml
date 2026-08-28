@@ -101,6 +101,7 @@ jobs:
 
           # Soong/build bootstrap closure, including the AP2A release-config map.
           clone_aosp_tag build/blueprint build/blueprint
+          clone_aosp_tag build/bazel build/bazel
           clone_github_snapshot build/release LineageOS/android_build_release lineage-21.0
           clone_aosp_tag prebuilts/go/linux-x86 prebuilts/go/linux-x86
           clone_aosp_tag prebuilts/bazel/common prebuilts/bazel/common
