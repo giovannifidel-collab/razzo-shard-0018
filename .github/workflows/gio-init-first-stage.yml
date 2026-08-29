@@ -138,7 +138,7 @@ jobs:
             https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86 \
             "$(git -C "$ROOT/prebuilts/clang/host/linux-x86" rev-parse HEAD)"
 
-          ln -sfn soong/root.bp "$ROOT/Android.bp"
+          ln -sfn build/soong/root.bp "$ROOT/Android.bp"
           ln -sfn build/soong/bootstrap.bash "$ROOT/bootstrap.bash"
           ln -sfn make/CleanSpec.mk "$ROOT/build/CleanSpec.mk"
           ln -sfn make/buildspec.mk.default "$ROOT/build/buildspec.mk.default"
