@@ -94,7 +94,7 @@ jobs:
           }
 
           clone_exact build/make https://github.com/crdroidandroid/android_build.git a65e54af30218c78ceca6b4582d13e141198043e
-          clone_aosp_tag build/soong build/soong
+          clone_github_snapshot build/soong crdroidandroid/android_build_soong 14.0
           clone_exact system/core https://github.com/crdroidandroid/android_system_core.git 4f4ec573833c637896b12694654b40d33d242d99
           clone_exact bionic https://github.com/crdroidandroid/android_bionic.git 1e50ab3618271567b79b813288c77abb7babac80
 
@@ -125,7 +125,7 @@ jobs:
           clone_aosp_tag external/lzma external/lzma
           clone_aosp_tag external/protobuf external/protobuf
           clone_aosp_tag external/selinux external/selinux
-          clone_github_snapshot system/update_engine crdroidandroid/android_system_update_engine 14.0
+          clone_aosp_tag system/update_engine system/update_engine
 
           mkdir -p "$ROOT/prebuilts/clang/host"
           git init -q "$ROOT/prebuilts/clang/host/linux-x86"
