@@ -105,6 +105,7 @@ jobs:
           clone_aosp_tag prebuilts/bazel/common prebuilts/bazel/common
           clone_aosp_tag external/golang-protobuf external/golang-protobuf
           clone_exact external/go-cmp https://android.googlesource.com/platform/external/go-cmp 88d15eac089d7f20c739ff1001d56b91872b21a1
+          clone_exact external/spdx-tools https://android.googlesource.com/platform/external/spdx-tools 3f8dabc60796d0302dd3076029ee511e7676d099
           clone_aosp_tag external/starlark-go external/starlark-go
           clone_exact toolchain/pgo-profiles https://github.com/crdroidandroid/android_toolchain_pgo-profiles.git c3af7d5da6da864adeb60c0095463a8660934c1d
           clone_github_snapshot prebuilts/build-tools crdroidandroid/android_prebuilts_build-tools 14.0
