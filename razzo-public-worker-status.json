@@ -1,6 +1,6 @@
 {
   "schema": "razzo.public-worker-status.v2",
-  "state": "started",
+  "state": "completed",
   "workflowRunId": "33337635028",
   "cycleId": "gio-os-source-probe-eb0243828bf4-1788126790",
   "generationId": "gio-os-source-probe-eb0243828bf4-1788126790:g1",
@@ -11,8 +11,8 @@
   "title": "GIO OS public Android source probe: system-core",
   "kind": "gio-public-build-probe",
   "exactInputSha": "eb0243828bf4be43f8e510b6711df8555c7a7de1",
-  "observedSha": null,
-  "durationSeconds": null,
+  "observedSha": "eb0243828bf4be43f8e510b6711df8555c7a7de1",
+  "durationSeconds": 8.556,
   "error": null,
-  "updatedEpoch": 1788126802.555534
+  "updatedEpoch": 1788126812.6723125
 }
