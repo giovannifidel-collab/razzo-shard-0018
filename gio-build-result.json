@@ -1,0 +1,66 @@
+{
+  "fileCount": 1773,
+  "gitMetadataGiB": 0.052,
+  "privateGioSourcePresent": false,
+  "publicInputsOnly": true,
+  "repository": "https://github.com/crdroidandroid/android_system_core.git",
+  "requestedRef": "14.0",
+  "resolvedSha": "d325f066ee73ce1e4336c942fd245cf8b1236a27",
+  "schema": "gio.os.public-source-probe.v1",
+  "signingKeysPresent": false,
+  "targetMaxGiB": 12.5,
+  "taskId": "system-core",
+  "topDirectories": [
+    {
+      "kib": 3452,
+      "path": "fs_mgr"
+    },
+    {
+      "kib": 2728,
+      "path": "trusty"
+    },
+    {
+      "kib": 2020,
+      "path": "libutils"
+    },
+    {
+      "kib": 1524,
+      "path": "init"
+    },
+    {
+      "kib": 1116,
+      "path": "fastboot"
+    },
+    {
+      "kib": 768,
+      "path": "debuggerd"
+    },
+    {
+      "kib": 692,
+      "path": "libcutils"
+    },
+    {
+      "kib": 380,
+      "path": "healthd"
+    },
+    {
+      "kib": 360,
+      "path": "libprocessgroup"
+    },
+    {
+      "kib": 244,
+      "path": "storaged"
+    },
+    {
+      "kib": 240,
+      "path": "libstats"
+    },
+    {
+      "kib": 224,
+      "path": "rootdir"
+    }
+  ],
+  "withinTarget": true,
+  "workingSetGiB": 0.068,
+  "workingSetKiB": 70840
+}
